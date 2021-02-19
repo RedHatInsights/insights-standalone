@@ -1,12 +1,16 @@
 {
   "name": "@redhat-cloud-services/insights-standalone",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Mock of https://github.com/RedHatInsights/insights-rbac and https://github.com/RedHatInsights/entitlements-api-go complete with keycloak scripts and Webpack config",
   "main": "index.js",
   "module": "index.js",
   "bin": {
     "insights-standalone": "./cli.js",
     "insights-standalone-keycloak": "./start_keycloak.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RedHatInsights/insights-standalone.git"
   },
   "scripts": {
     "start": "node cli.js",
@@ -16,7 +20,7 @@
   "author": "Red Hat",
   "license": "MIT",
   "dependencies": {
-    "commander": "^7.1.0",
+    "commander": "^7.0.0",
     "express": "^4.17.1"
   }
 }
