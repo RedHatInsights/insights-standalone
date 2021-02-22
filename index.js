@@ -1,7 +1,7 @@
 const { readFileSync } = require('fs');
 const { resolve } = require('path');
 
-function getProxyPaths(standalonePort = 3101, publicPath, webpackPort) {
+function getProxyPaths(publicPath, webpackPort = 8080, standalonePort = 3101) {
   return [
 		{
 			context: [
@@ -13,7 +13,7 @@ function getProxyPaths(standalonePort = 3101, publicPath, webpackPort) {
 				'/silent-check-sso',
 				'/beta/silent-check-sso'
 			],
-			target: `http://localhost:${standalonePort || 3101}`,
+			target: `http://localhost:${standalonePort}`,
 			secure: false,
 			changeOrigin: true
 		},

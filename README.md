@@ -4,7 +4,7 @@ A minimal standalone backend for cloud.redhat.com useful for frontend developers
 
 ## Usage
 
-This package is intended to be installed as an NPM dependency for the easiest use.
+This package is intended to be installed as an NPM dependency:
 
 ```sh
 npm install --save-dev @redhat-cloud-services/insights-standalone
@@ -14,7 +14,27 @@ npm install --save-dev @redhat-cloud-services/insights-standalone
 package.json
 
 "scripts": {
-  "start:backend": "insights-standalone-keycloak && insights-standalone"
+  "start:backend": "insights-standalone-keycloak && insights-standalone",
+  "start:standalone": "npm-run-all --parallel start:backend start"
+}
+```
+
+You'll need to modify your webpack config as well:
+```js
+webpack.config.js
+
+const { getProxyPaths, getHtmlReplacements } = require('@redhat-cloud-services/insights-standalone');
+
+// If using ESI tags
+const HtmlReplaceWebpackPlugin = require('html-replace-webpack-plugin');
+const chromePath = require.resolve('@redhat-cloud-services/insights-standalone/package.json').replace('package.json', 'repos/insights-chrome-build');
+plugins: [
+  new HtmlReplaceWebpackPlugin(getHtmlReplacements(chromePath))
+]
+
+// To proxy requests to backend
+devServer: {
+  proxy: getProxyPaths(webpackPublicPath, webpackPort)
 }
 ```
 
