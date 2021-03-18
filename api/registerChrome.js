@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-function registerChrome(app, chromePrefix, chrome, keycloakUri) {
+function registerChromeJS(app, chromePrefix, chrome, keycloakUri) {
   // Can't just use express.static since there are some hardcoded strings for auth that need to be changed at runtime
   // These strings need to change: https://github.com/redallen/insights-chrome/commit/de14093bd20105042f48627466d4fba17825a890
   app.get(`${chromePrefix}/js/*.js`, (req, res) => {
@@ -20,4 +20,4 @@ function registerChrome(app, chromePrefix, chrome, keycloakUri) {
   });
 }
 
-module.exports = { registerChrome };
+module.exports = { registerChromeJS };

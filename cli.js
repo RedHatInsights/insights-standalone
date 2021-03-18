@@ -4,93 +4,118 @@ const { program } = require('commander');
 const express = require('express');
 const path = require('path');
 const { registerEntitlements } = require('./api/registerEntitlements');
-const { registerChrome } = require('./api/registerChrome');
+const { registerChromeJS } = require('./api/registerChrome');
 const { checkoutRepos } = require('./api/checkout');
 const { version } = require('./package.json');
+const { startDocker } = require('./startDocker');
+const { services } = require('./services');
 
-const reposDir = path.join(__dirname, 'repos');
+const defaultReposDir = path.join(__dirname, 'repos');
 
-function getBackendConfigBranch(isBeta, isQA) {
-  if (isQA) {
+function getEntitlementsBranch(isProd, isQA) {
+  if (isProd) {
+    return 'prod';
+  }
+  else if (isQA) {
     return 'qa';
   }
-  else if (isBeta) {
-    return 'master';
+  
+  return 'master';
+}
+
+function getRbacConfigFolder(isProd, isQA) {
+  if (isProd) {
+    return 'prod';
+  }
+  else if (isQA) {
+    return 'qa';
   }
   
-  return 'prod';
+  return 'ci';
 }
 
 program
   .version(version)
   .description('download required static files and serve alongside mock API')
   .option(
+    '-d, --dir <env>',
+    'Directory to look for (or clone) repos into',
+    defaultReposDir
+  )
+  .option(
     '-e, --env <env>',
-    'Branch to clone of repos: ci-beta|ci-stable|qa-beta|qa-stable|prod-beta|prod-stable|nightly-stable',
+    'Files to use from cloned repos: ci-beta|ci-stable|qa-beta|qa-stable|prod-beta|prod-stable|nightly-stable',
     'ci-beta'
   )
   .option(
     '-p, --port <port>',
-    'port to run static asset server + mock entitlements on',
+    'Port to run static asset server + mock entitlements on',
     4000
   )
   .option(
     '--chrome <path>',
-    'path to serve insights-chrome dist from',
-    path.join(reposDir, 'insights-chrome-build')
+    'Path to serve insights-chrome dist from',
+    'insights-chrome-build'
   )
   .option(
     '--landing <path>',
-    'path to serve landing-page-frontend dist from',
-    path.join(reposDir, 'landing-page-frontend-build')
+    'Path to serve landing-page-frontend dist from',
+    'landing-page-frontend-build'
   )
   .option(
     '--service-config <path>',
-    'path to serve cloud-services-config dist from',
-    path.join(reposDir, 'cloud-services-config')
+    'Path to serve cloud-services-config dist from',
+    'cloud-services-config'
   )
   .option(
     '--keycloak-uri <uri>',
-    'uri to inject in insights-chrome',
+    'Uri to inject in insights-chrome',
     'http://localhost:4001'
   )
   .option(
     '--entitlements-config <path>',
-    'path to get entitlements config from for mock entitlements service',
-    path.join(reposDir, 'entitlements-config')
+    'Path to get entitlements config from for mock entitlements service',
+    'entitlements-config'
   )
   .option(
     '--rbac-config <path>',
-    'path to get entitlements config from for mock entitlements service',
-    path.join(reposDir, 'rbac-config')
+    'Path to get entitlements config from for mock entitlements service',
+    'rbac-config'
   )
-  .action(({ env, port, chrome, landing, serviceConfig, entitlementsConfig, rbacConfig, keycloakUri }) => {
+  .action(async ({ dir: reposDir, env, port, chrome, landing, serviceConfig, entitlementsConfig, rbacConfig, keycloakUri }) => {
     const isBeta = env.endsWith('beta');
     const isQA = env.startsWith('qa');
-    console.log('isBeta', isBeta, 'isQA', isQA);
-    const frontendRepos = [chrome, landing, serviceConfig]
-      .filter(p => p.startsWith(reposDir))
-      .map(p => p.replace(reposDir, '').substr(1));
-    checkoutRepos(frontendRepos, env, reposDir);
-    // Entitlements doesn't follow normal ci-beta config scheme
-    const backendRepos = [entitlementsConfig, rbacConfig]
-      .filter(p => p.startsWith(reposDir))
-      .map(p => p.replace(reposDir, '').substr(1));
-    checkoutRepos(backendRepos, getBackendConfigBranch(isBeta, isQA), reposDir);
+    const isProd = env.startsWith('prod');
+    console.log('isBeta', isBeta, 'isQA', isQA, 'isProd', isProd);
+
+    // If we manage the repos it's okay to overwrite the contents
+    const overwriteRepos = reposDir === defaultReposDir;
+    const frontendRepos = [chrome, landing, serviceConfig];
+    checkoutRepos(frontendRepos, env, reposDir, overwriteRepos);
+    // Entitlements-config has master (ci), prod, qa
+    checkoutRepos([entitlementsConfig], getEntitlementsBranch(isProd, isQA), reposDir, overwriteRepos);
+    // Rbac-config has master with 4 folders (ci,prod,qa,stage). Not sure what prod, qa branches are for (they're old)
+    checkoutRepos([rbacConfig], 'master', reposDir, overwriteRepos);
 
     const app = express();
-    registerEntitlements(app, entitlementsConfig);
-
     const chromePrefix = `${isBeta ? '/beta' : ''}/apps/chrome`;
-    registerChrome(app, chromePrefix, chrome, keycloakUri);
-    // For non-JS paths of chrome
-    app.use(chromePrefix, express.static(chrome));
+    // Services
+    registerChromeJS(app, chromePrefix, chrome, keycloakUri);
+    registerEntitlements(app, path.join(reposDir, entitlementsConfig));
+    const dockerServices = services({
+      rbacConfig,
+      rbacConfigFolder: getRbacConfigFolder(isProd, isQA)
+    });
+    await startDocker(dockerServices);
+    
+    // Static assets
+    app.use(chromePrefix, express.static(chrome)); // For non-JS paths of chrome. Must come after registerChromeJS
     app.use('/', express.static(landing));
     app.use('/beta', express.static(landing));
     app.use('/config', express.static(serviceConfig));
     app.use('/beta/config', express.static(serviceConfig));
 
-    app.listen(port, () => console.log('Listening on', port));
+    app.listen(port, () => console.log('insights_standalone listening on', port));
   })
 
 program.parse(process.argv);
