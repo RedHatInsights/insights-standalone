@@ -18,6 +18,11 @@ function registerChromeJS(app, chromePrefix, chrome, keycloakUri) {
 
     res.send(fileString);
   });
+
+  // Mismatching chrome versions are usually the first reason insights_standalone breaks
+  // const scriptTag = path.resolve(chrome, 'snippets/after.html');
+  // const chromeVersion = fs.readFileSync(scriptTag, 'utf8');
+  // console.log('Serving', chromeVersion);
 }
 
 module.exports = { registerChromeJS };

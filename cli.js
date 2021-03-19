@@ -3,6 +3,7 @@
 const { program } = require('commander');
 const express = require('express');
 const path = require('path');
+const { writeFileSync } = require('fs');
 const { registerEntitlements } = require('./api/registerEntitlements');
 const { registerChromeJS } = require('./api/registerChrome');
 const { checkoutRepos } = require('./api/checkout');
@@ -82,11 +83,28 @@ program
     'Path to get entitlements config from for mock entitlements service',
     'rbac-config'
   )
-  .action(async ({ dir: reposDir, env, port, chrome, landing, serviceConfig, entitlementsConfig, rbacConfig, keycloakUri }) => {
+  .action(async ({
+    dir: reposDir,
+    env,
+    port,
+    chrome,
+    landing,
+    serviceConfig,
+    entitlementsConfig,
+    rbacConfig,
+    keycloakUri
+  }) => {
     const isBeta = env.endsWith('beta');
     const isQA = env.startsWith('qa');
     const isProd = env.startsWith('prod');
     console.log('isBeta', isBeta, 'isQA', isQA, 'isProd', isProd);
+    // Do this first to win race against webpack-dev-server starting
+    const dockerServices = services({
+      rbacConfig,
+      rbacConfigFolder: getRbacConfigFolder(isProd, isQA)
+    });
+    // Write config to file for webpack
+    writeFileSync(path.join(__dirname, 'lastRun.js'), `module.exports = ${JSON.stringify({ reposDir, port, chrome }, null, 2)}`);
 
     // If we manage the repos it's okay to overwrite the contents
     const overwriteRepos = reposDir === defaultReposDir;
@@ -100,23 +118,22 @@ program
     const app = express();
     const chromePrefix = `${isBeta ? '/beta' : ''}/apps/chrome`;
     // Services
-    registerChromeJS(app, chromePrefix, chrome, keycloakUri);
+    registerChromeJS(app, chromePrefix, path.join(reposDir, chrome), keycloakUri);
     registerEntitlements(app, path.join(reposDir, entitlementsConfig));
-    const dockerServices = services({
-      rbacConfig,
-      rbacConfigFolder: getRbacConfigFolder(isProd, isQA)
-    });
     await startDocker(dockerServices);
     
     // Static assets
-    app.use(chromePrefix, express.static(chrome)); // For non-JS paths of chrome. Must come after registerChromeJS
-    app.use('/', express.static(landing));
-    app.use('/beta', express.static(landing));
-    app.use('/config', express.static(serviceConfig));
-    app.use('/beta/config', express.static(serviceConfig));
+    // For non-JS paths of chrome. Must come after registerChromeJS
+    app.use(chromePrefix, express.static(path.join(reposDir, chrome)));
+    const staticLanding = express.static(path.join(reposDir, landing));
+    app.use('/', staticLanding);
+    app.use('/beta', staticLanding);
+    const staticConfig = express.static(path.join(reposDir, serviceConfig));
+    app.use('/config', staticConfig);
+    app.use('/beta/config', staticConfig);
 
     app.listen(port, () => console.log('insights_standalone listening on', port));
-  })
+  });
 
 program.parse(process.argv);
 

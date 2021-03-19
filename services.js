@@ -4,7 +4,7 @@ const DOCKER_PREFIX = "clouddot_";
 const services = ({
   rbacConfig,
   rbacConfigFolder
-}) => ({
+} = {}) => ({
   "insights_chrome": {
     keycloak: {
       args: [
@@ -61,8 +61,8 @@ const services = ({
         `-e DISABLE_MIGRATE=False`,
         `-e DEVELOPMENT=True`,
         `-e DJANGO_DEBUG=True`,
-        `-v ${path.resolve(rbacConfig, 'configs', rbacConfigFolder, 'permissions')}:/opt/app-root/src/rbac/management/role/permissions`,
-        `-v ${path.resolve(rbacConfig, 'configs', rbacConfigFolder, 'roles')}:/opt/app-root/src/rbac/management/role/definitions`,
+        rbacConfig && rbacConfigFolder && `-v ${path.resolve(rbacConfig, 'configs', rbacConfigFolder, 'permissions')}:/opt/app-root/src/rbac/management/role/permissions`,
+        rbacConfig && rbacConfigFolder && `-v ${path.resolve(rbacConfig, 'configs', rbacConfigFolder, 'roles')}:/opt/app-root/src/rbac/management/role/definitions`,
         `quay.io/zallen/rbac`,
       ]
     }
@@ -73,6 +73,7 @@ const services = ({
 // Out: [number] | null
 function getExposedPorts(args) {
   const portArg = args
+    .filter(Boolean)
     .map(arg => arg.trimStart())
     .find(arg => arg.startsWith("-p"));
   if (portArg) {

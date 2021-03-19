@@ -23,7 +23,7 @@ async function startDocker(dockerServices) {
   for (let [serviceName, subServices] of Object.entries(dockerServices)) {
     for (let [subServiceName, { args, dependsOn }] of Object.entries(subServices)) {
       const containerName = `${DOCKER_PREFIX}${serviceName}_${subServiceName}`;
-      await startService(containerName, args.join(' \\\n'), dockerServices, dependsOn)
+      await startService(containerName, args.filter(Boolean).join(' \\\n'), dockerServices, dependsOn)
       let ports = getExposedPorts(args);
       if (ports && ports.length === 1) {
         ports = ports[0];
