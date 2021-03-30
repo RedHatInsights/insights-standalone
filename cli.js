@@ -9,7 +9,7 @@ const { registerChromeJS } = require('./api/registerChrome');
 const { checkoutRepos } = require('./api/checkout');
 const { version } = require('./package.json');
 const { startDocker } = require('./startDocker');
-const { services } = require('./services');
+const { services, getExposedPorts } = require('./services');
 
 const defaultReposDir = path.join(__dirname, 'repos');
 
@@ -34,6 +34,8 @@ function getRbacConfigFolder(isProd, isQA) {
   
   return 'ci';
 }
+
+const noEnvServices = services();
 
 program
   .version(version)
@@ -71,7 +73,7 @@ program
   .option(
     '--keycloak-uri <uri>',
     'Uri to inject in insights-chrome',
-    'http://localhost:4001'
+    `http://localhost:${getExposedPorts(noEnvServices['insights_chrome'].keycloak.args)[0]}`
   )
   .option(
     '--entitlements-config <path>',
@@ -100,7 +102,7 @@ program
     console.log('isBeta', isBeta, 'isQA', isQA, 'isProd', isProd);
     // Do this first to win race against webpack-dev-server starting
     const dockerServices = services({
-      rbacConfig,
+      rbacConfig: path.join(reposDir, rbacConfig),
       rbacConfigFolder: getRbacConfigFolder(isProd, isQA)
     });
     // Write config to file for webpack

@@ -61,15 +61,16 @@ const services = ({
         `-e DISABLE_MIGRATE=False`,
         `-e DEVELOPMENT=True`,
         `-e DJANGO_DEBUG=True`,
-        rbacConfig && rbacConfigFolder && `-v ${path.resolve(rbacConfig, 'configs', rbacConfigFolder, 'permissions')}:/opt/app-root/src/rbac/management/role/permissions`,
-        rbacConfig && rbacConfigFolder && `-v ${path.resolve(rbacConfig, 'configs', rbacConfigFolder, 'roles')}:/opt/app-root/src/rbac/management/role/definitions`,
-        `quay.io/zallen/rbac`,
+        `-e APP_HOME=/opt/app-root/src/rbac`, // Run using django instead of gunicorn for better error messages
+        rbacConfig && rbacConfigFolder && `-v ${path.resolve(rbacConfig, 'configs', rbacConfigFolder, 'permissions')}:/opt/app-root/src/rbac/management/role/permissions:ro`,
+        rbacConfig && rbacConfigFolder && `-v ${path.resolve(rbacConfig, 'configs', rbacConfigFolder, 'roles')}:/opt/app-root/src/rbac/management/role/definitions:ro`,
+        `quay.io/cloudservices/rbac`,
       ]
     }
   }
 });
 
-// In: docker args array
+// In: docker args array [string]
 // Out: [number] | null
 function getExposedPorts(args) {
   const portArg = args
