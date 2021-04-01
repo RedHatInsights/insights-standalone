@@ -10,7 +10,7 @@ async function startService(name, args, dockerServices, dependsOn) {
     console.log('Waiting for', dep);
     while (!execSync(`docker logs ${dep} 2>&1`).toString().includes(startMessage)) {
       console.log('Waiting for', dep);
-      await new Promise(res => setTimeout(res, 1000));
+      await new Promise(res => setTimeout(res, 2000));
     }
   }
 

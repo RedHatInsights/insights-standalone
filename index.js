@@ -15,16 +15,17 @@ function onProxyReq(proxyReq, req) {
       identity: {
         type: "User",
         auth_type: "basic-auth",
-        account_number: payload.account_number,
+        account_number: payload.account_number + '',
         user: {
           username: payload.username,
           email: payload.email,
           first_name: payload.first_name,
           last_name: payload.last_name,
-          is_active: payload.is_active,
+          is_active: true,
           is_org_admin: payload.is_org_admin,
           is_internal: payload.is_internal,
-          locale: payload.locale
+          locale: 'en-US',
+          user_id: payload.account_id
         },
         internal: {
           org_id: payload.org_id,
@@ -55,6 +56,7 @@ function getProxyPaths({
     .concat({
       context: [
         '/api/entitlements',
+        '/api/insights-services',
         '/apps/chrome',
         '/beta/apps/chrome',
         '/config',

@@ -2206,8 +2206,8 @@
       "is_internal" : [ "true" ],
       "account_id" : [ "1" ],
       "org_id" : [ "111" ],
-      "last_name" : [ "Ministrator" ],
-      "first_name" : [ "Bad" ],
+      "last_name" : [ "User" ],
+      "first_name" : [ "Admin" ],
       "is_org_admin" : [ "true" ]
     },
     "credentials" : [ {
@@ -2242,7 +2242,7 @@
       "org_id" : [ "111" ],
       "last_name" : [ "Doe" ],
       "first_name" : [ "John" ],
-      "is_org_admin" : [ "true" ]
+      "is_org_admin" : [ "false" ]
     },
     "credentials" : [ {
       "id" : "aa79c9b2-5327-4d42-bc3b-1c46e1fa99d2",

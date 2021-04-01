@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-
 const { program } = require('commander');
 const express = require('express');
 const path = require('path');
 const { writeFileSync } = require('fs');
 const { registerEntitlements } = require('./api/registerEntitlements');
+const { registerBackofficeProxy } = require('./api/registerBackofficeProxy');
 const { registerChromeJS } = require('./api/registerChrome');
 const { checkoutRepos } = require('./api/checkout');
 const { version } = require('./package.json');
@@ -122,6 +122,8 @@ program
     // Services
     registerChromeJS(app, chromePrefix, path.join(reposDir, chrome), keycloakUri);
     registerEntitlements(app, path.join(reposDir, entitlementsConfig));
+    app.use(express.json());
+    registerBackofficeProxy(app);
     await startDocker(dockerServices);
     
     // Static assets
