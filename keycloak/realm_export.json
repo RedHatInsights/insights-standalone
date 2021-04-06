@@ -2202,10 +2202,10 @@
     "lastName" : "User",
     "email" : "admin@foo.com",
     "attributes" : {
-      "account_number" : [ "11" ],
-      "is_internal" : [ "true" ],
       "account_id" : [ "1" ],
+      "account_number" : [ "11" ],
       "org_id" : [ "111" ],
+      "is_internal" : [ "true" ],
       "last_name" : [ "User" ],
       "first_name" : [ "Admin" ],
       "is_org_admin" : [ "true" ]
@@ -2236,13 +2236,13 @@
     "lastName" : "Doe",
     "email" : "user@foo.com",
     "attributes" : {
-      "account_number" : [ "11" ],
+      "account_id" : [ "2" ],
+      "account_number" : [ "22" ],
+      "org_id" : [ "222" ],
       "is_internal" : [ "false" ],
-      "account_id" : [ "1" ],
-      "org_id" : [ "111" ],
       "last_name" : [ "Doe" ],
       "first_name" : [ "John" ],
-      "is_org_admin" : [ "false" ]
+      "is_org_admin" : [ "true" ]
     },
     "credentials" : [ {
       "id" : "aa79c9b2-5327-4d42-bc3b-1c46e1fa99d2",

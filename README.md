@@ -14,27 +14,31 @@ npm install --save-dev @redhat-cloud-services/insights-standalone
 package.json
 
 "scripts": {
-  "start:backend": "insights-standalone-keycloak && insights-standalone",
+  "start:backend": "insights-standalone",
   "start:standalone": "npm-run-all --parallel start:backend start"
 }
 ```
 
-You'll need to modify your webpack config as well:
+You'll need to modify your webpack config 2 places as well:
 ```js
 webpack.config.js
 
 const { getProxyPaths, getHtmlReplacements } = require('@redhat-cloud-services/insights-standalone');
 
 // If using ESI tags
-const HtmlReplaceWebpackPlugin = require('html-replace-webpack-plugin');
-const chromePath = require.resolve('@redhat-cloud-services/insights-standalone/package.json').replace('package.json', 'repos/insights-chrome-build');
 plugins: [
-  new HtmlReplaceWebpackPlugin(getHtmlReplacements(chromePath))
+  new HtmlReplaceWebpackPlugin([
+    {
+      pattern: '@@env',
+      replacement: appDeployment,
+    },
+    ...(!isProduction ? getHtmlReplacements() : [])
+  ]),
 ]
 
 // To proxy requests to backend
 devServer: {
-  proxy: getProxyPaths(webpackPublicPath, webpackPort)
+  proxy: getProxyPaths({ publicPath, webpackPort })
 }
 ```
 
@@ -45,17 +49,23 @@ Usage: insights-standalone [options]
 download required static files and serve alongside mock API
 
 Options:
-  -e, --env <env>    Branch to clone of each repo:
-                     ci-beta|ci-stable|qa-beta|qa-stable|prod-beta|prod-stable|nightly-stable (default:
-                     "ci-beta")
-  -p, --port <port>  port to run on (default: 3101)
-  --chrome <path>    path to serve insights-chrome dist from (default:
-                     "insights-standalone/repos/insights-chrome-build")
-  --landing <path>   path to serve landing-page-frontend dist from (default:
-                     "insights-standalone/repos/landing-page-frontend-build")
-  --config <path>    path to serve cloud-services-config dist from (default:
-                     "insights-standalone/repos/cloud-services-config")
-  -h, --help         display help for command
+  -V, --version                 output the version number
+  -d, --dir <env>               Directory to look for (or clone) repos into (default:
+                                "/home/thesm/src/crc/insights-standalone/repos")
+  -e, --env <env>               Files to use from cloned repos:
+                                ci-beta|ci-stable|qa-beta|qa-stable|prod-beta|prod-stable|nightly-stable
+                                (default: "ci-beta")
+  -p, --port <port>             Port to run static asset server + mock entitlements on (default: 4000)
+  --chrome <path>               Path to serve insights-chrome dist from (default: "insights-chrome-build")
+  --landing <path>              Path to serve landing-page-frontend dist from (default:
+                                "landing-page-frontend-build")
+  --service-config <path>       Path to serve cloud-services-config dist from (default: "cloud-services-config")
+  --keycloak-uri <uri>          Uri to inject in insights-chrome (default: "http://localhost:4001")
+  --entitlements-config <path>  Path to get entitlements config from for mock entitlements service (default:
+                                "entitlements-config")
+  --rbac-config <path>          Path to get entitlements config from for mock entitlements service (default:
+                                "rbac-config")
+  -h, --help                    display help for commandUsage: insights-standalone [options]
 ```
 
 ## Development / Local usage
@@ -71,6 +81,4 @@ This project clones the following repos that contain static assets required for 
     - Contains silent-check-sso.html needed for user auth
   - [cloud-services-config](https://github.com/RedHatInsights/cloud-services-config)
     - Contains `main.yml` needed by chrome for enumerating paths and apps
-
-
 
