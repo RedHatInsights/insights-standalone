@@ -1,11 +1,11 @@
 const { execSync } = require('child_process');
-const { DOCKER_PREFIX, NET, getExposedPorts } = require('./services');
+const { NET, getExposedPort } = require('./helpers');
 
-async function startService(name, args, dockerServices, dependsOn) {
+async function startService(name, args, backend, dependsOn) {
   execSync(`docker container rm --force ${name}`);
   for (const dep of (dependsOn || [])) {
-    const [group, service ] = dep.replace(DOCKER_PREFIX, '').split('_');
-    const startMessage = dockerServices[group][service].startMessage;
+    const [group, service ] = dep.split('_');
+    const startMessage = backend[group][service].startMessage;
 
     console.log('Waiting for', dep);
     while (!execSync(`docker logs ${dep} 2>&1`).toString().includes(startMessage)) {
@@ -14,21 +14,37 @@ async function startService(name, args, dockerServices, dependsOn) {
     }
   }
 
-  execSync(`docker run --name ${name} --network ${NET} --detach ${args}`);
+  execSync(`docker run --name ${name} --network ${NET} --detach --pull always ${args}`);
 }
 
-async function startDocker(dockerServices) {
+async function startDocker(backend) {
   execSync(`docker network inspect ${NET} >/dev/null 2>&1 || \
             docker network create  ${NET}`);
-  for (let [serviceName, subServices] of Object.entries(dockerServices)) {
+  for (let [serviceName, subServices] of Object.entries(backend)) {
     for (let [subServiceName, { args, dependsOn }] of Object.entries(subServices)) {
-      const containerName = `${DOCKER_PREFIX}${serviceName}_${subServiceName}`;
-      await startService(containerName, args.filter(Boolean).join(' \\\n'), dockerServices, dependsOn)
-      let ports = getExposedPorts(args);
-      if (ports && ports.length === 1) {
-        ports = ports[0];
+      if (Array.isArray(args)) {
+        const containerName = [serviceName, subServiceName].join('_');
+
+        const formattedArgs = args
+          .filter(Boolean)
+          .map(arg => {
+            if (typeof arg === 'function') {
+              if (subServices.assets) {
+                return arg(subServices.assets);
+              }
+            }
+            else if (typeof arg === 'string') {
+              return arg;
+            }
+            else {
+              throw Error(`Arg is a function but there's no assets: ${arg}`);
+            }
+          })
+          .join(' \\\n');
+        await startService(containerName, formattedArgs, backend, dependsOn)
+        const port = getExposedPort(args);
+        console.log("Container", containerName, "listening", port ? 'on' : '', port || '');
       }
-      console.log("Container", containerName, "listening", ports ? 'on' : '', ports || '');
     }
   }
 }

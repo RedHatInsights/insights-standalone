@@ -1,8 +1,9 @@
 const { readFileSync } = require('fs');
-const { resolve } = require('path');
-const jws = require('jws');
-const { services, getExposedPorts } = require('./services');
-const lastRun = require('./lastRun');
+const path = require('path');
+const { decode } = require('jws');
+const { getConfig, resolvePath, getExposedPort } = require('./helpers');
+
+const { frontend, port, backend, reposDir } = getConfig();
 
 // Transform cookie into x-rh-identity for local services
 function onProxyReq(proxyReq, req) {
@@ -10,7 +11,7 @@ function onProxyReq(proxyReq, req) {
   const match = cookie && cookie.match(/cs_jwt=([^;]+);/);
   if (match) {
     const cs_jwt = match[1];
-    const { payload } = jws.decode(cs_jwt);
+    const { payload } = decode(cs_jwt);
     const identity = {
       identity: {
         type: "User",
@@ -38,45 +39,40 @@ function onProxyReq(proxyReq, req) {
   }
 }
 
-function getProxyPaths({
-  standalonePort,
-  publicPath,
-  webpackPort
-}) {
-  standalonePort = standalonePort || lastRun.port;
-  const dockerServices = services();
-  const res = Object.values(dockerServices)
-    .map(service => Object.values(service))
-    .flat()
-    .map(({ context, args }) => ({
-      context,
-      ports: getExposedPorts(args)
-    }))
-    .filter(({ context, ports }) => Boolean(context) && ports.length === 1)
-    .concat({
-      context: [
-        '/api/entitlements',
-        '/api/insights-services',
-        '/apps/chrome',
-        '/beta/apps/chrome',
-        '/config',
-        '/beta/config',
-        '/silent-check-sso',
-        '/beta/silent-check-sso'
-      ],
-      ports: [standalonePort],
-    })
-    .map(({ context, ports }) => ({
-      context,
-      target: `http://localhost:${ports[0]}`,
-      secure: false,
-      changeOrigin: false,
-      onProxyReq
-    }));
-  if (publicPath && webpackPort) {
-    // for /beta/publicPath/fed-mods.json
+function getProxyPaths({ webpackPort }) {
+  let res = [];
+  // At the top level we might see a "context" and "register"
+  Object.values(backend).forEach(proj => {
+    if (proj.context) {
+      res.push({ context: proj.context, port });
+    }
+    // At the 2nd level we might see a "context" and "args" array
+    Object.values(proj).forEach(({ context, args }) => {
+      if (context) {
+        const pport = getExposedPort(args);
+        if (!pport) {
+          throw Error(`Could not get port for ${JSON.stringify(context)}`);
+        }
+        res.push({ context, port: pport });
+      }
+    });
+  });
+  Object.values(frontend).forEach(proj => {
+    if (proj.context) {
+      res.push({ context: proj.context, port });
+    }
+  });
+  res = res.map(({ context, port }) => ({
+    context,
+    target: `http://localhost:${port}`,
+    secure: false,
+    changeOrigin: false,
+    onProxyReq
+  }));
+  if (webpackPort) {
+    // For /beta routes regardless of env
     res.push({
-      context: [`/beta${publicPath}`],
+      context: [`/beta`],
       target: `http://localhost:${webpackPort}`,
       pathRewrite: path => path.replace(/^\/beta/, ''),
       secure: false
@@ -86,15 +82,12 @@ function getProxyPaths({
   return res;
 }
 
-const lastRunChromePath = resolve(lastRun.reposDir, lastRun.chrome);
-
-function getHtmlReplacements({ chromePath } = {}) {
-  chromePath = chromePath || lastRunChromePath;
+function getHtmlReplacements() {
   return [{
     pattern: /<\s*esi:include\s+src\s*=\s*"([^"]+)"\s*\/\s*>/gm,
     replacement(_match, file) {
       file = file.split('/').pop();
-      const snippet = resolve(chromePath, 'snippets', file);
+      const snippet = path.resolve(resolvePath(reposDir, frontend.chrome.path), 'snippets', file);
       return readFileSync(snippet);
     }
   }];

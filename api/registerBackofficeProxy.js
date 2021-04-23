@@ -3,7 +3,7 @@ const users = realms.find(f => f.id === 'redhat-external').users;
 
 // https://backoffice-proxy-insights-services.ext.us-east.aws.preprod.paas.redhat.com/docs/#/
 // https://gitlab.cee.redhat.com/insights-platform/backoffice-proxy
-function registerBackofficeProxy(app) {
+function registerBackofficeProxy({ app }) {
   app.get ('/api/insights-services', (_, res)  => res.json({ message: 'success' }));
   app.post('/api/insights-services/v1/sendEmails', (req, res) => {
     if (!req.body.emails || !Array.isArray(req.body.emails) || req.body.emails.length === 0) {
@@ -45,4 +45,4 @@ function registerBackofficeProxy(app) {
   });
 }
 
-module.exports = { registerBackofficeProxy };
+module.exports = registerBackofficeProxy;
