@@ -21,7 +21,14 @@ async function startDocker(backend) {
   execSync(`docker network inspect ${NET} >/dev/null 2>&1 || \
             docker network create  ${NET}`);
   for (let [serviceName, subServices] of Object.entries(backend)) {
-    for (let [subServiceName, { args, dependsOn }] of Object.entries(subServices)) {
+    if (!subServices) {
+      continue;
+    }
+    for (let [subServiceName, subServiceProps] of Object.entries(subServices)) {
+      if (!subServiceProps) {
+        continue;
+      }
+      const { args, dependsOn } = subServiceProps;
       if (Array.isArray(args)) {
         const containerName = [serviceName, subServiceName].join('_');
 

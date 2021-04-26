@@ -41,38 +41,55 @@ function onProxyReq(proxyReq, req) {
 
 function getProxyPaths({ webpackPort }) {
   let res = [];
-  // At the top level we might see a "context" and "register"
-  Object.values(backend).forEach(proj => {
+  // At the top level we might see a "context"
+  Object.values(backend || {}).forEach(proj => {
+    if (!proj) {
+      return;
+    }
     if (proj.context) {
-      res.push({ context: proj.context, port });
+      if (proj.register) {
+        res.push({ context: proj.context, port });
+      }
+      else if (proj.target) {
+        res.push({ context: proj.context, target: proj.target });
+      }
     }
     // At the 2nd level we might see a "context" and "args" array
-    Object.values(proj).forEach(({ context, args }) => {
+    Object.values(proj).filter(Boolean).forEach(({ context, args, target }) => {
       if (context) {
-        const pport = getExposedPort(args);
-        if (!pport) {
-          throw Error(`Could not get port for ${JSON.stringify(context)}`);
+        if (!target) {
+          const pport = getExposedPort(args);
+          if (!pport) {
+            throw Error(`Could not get port for ${JSON.stringify(context)}`);
+          }
+          res.push({ context, port: pport });
         }
-        res.push({ context, port: pport });
+        else {
+          res.push({ context, target });
+        }
       }
     });
   });
   Object.values(frontend).forEach(proj => {
-    if (proj.context) {
-      res.push({ context: proj.context, port });
+    if (proj && proj.context) {
+      if (proj.path) {
+        res.push({ context: proj.context, port });
+      }
+      else if (proj.target) {
+        res.push({ context: proj.context, target: proj.target });
+      }
     }
   });
-  res = res.map(({ context, port }) => ({
+  res = res.map(({ context, target, port }) => ({
     context,
-    target: `http://localhost:${port}`,
+    target: target || `http://localhost:${port}`,
     secure: false,
-    changeOrigin: false,
+    changeOrigin: true,
     onProxyReq
   }));
   if (webpackPort) {
-    // For /beta routes regardless of env
     res.push({
-      context: [`/beta`],
+      context: ['/beta'],
       target: `http://localhost:${webpackPort}`,
       pathRewrite: path => path.replace(/^\/beta/, ''),
       secure: false

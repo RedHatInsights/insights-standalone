@@ -1,4 +1,5 @@
 const path = require('path');
+const merge = require('deepmerge');
 // In: docker args array [string]
 // Out: [number] | null
 function getExposedPorts(args) {
@@ -40,17 +41,25 @@ function resolvePath(reposDir, pathOrUrl) {
 }
 
 function getConfig() {
-  const defaultConfig = require('./standalone.config');
+  let res = require('./standalone.config');
   try {
-    const config = require(__dirname + './standalone.config');
-    Object.assign(config, defaultConfig); 
-    return config;
+    const config = require(process.cwd() + '/standalone.config');
+    res = merge(res, config);
+    // console.log('user', config);
+    Object.keys(res.backend || {})
+      .filter(key => typeof res.backend[key] === 'function')
+      .forEach(key => res.backend[key] = res.backend[key]({ env: res.env, port: res.port }));
   }
   catch (e) {
-    console.warn('No standalone config provided');
+    console.warn('No standalone config provided', e);
   }
 
-  return defaultConfig;
+  // Don't start keycloak if not replacing keycloakUri in chrome.js
+  if (res.frontend.chrome && !res.frontend.keycloakUri) {
+    delete res.backend.chrome.keycloak;
+  }
+  // console.log('config', res);
+  return res;
 }
 
 module.exports = {

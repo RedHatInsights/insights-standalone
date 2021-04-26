@@ -26,7 +26,7 @@ program
         proj.path = checkoutRepo({ repo: proj.path, reposDir, overwrite });
       }
     });
-    Object.values(backend).forEach(proj => 
+    Object.values(backend).filter(Boolean).forEach(proj => 
       Object.keys(proj.assets || []).forEach(key => {
         if (isGitUrl(proj.assets[key])) {
           proj.assets[key] = checkoutRepo({ repo: proj.assets[key], reposDir, overwrite });
@@ -39,6 +39,7 @@ program
 
     // Services
     Object.values(backend)
+      .filter(Boolean)
       .map(v => v.register)
       .filter(Boolean)
       .forEach(v => {

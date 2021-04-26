@@ -13,11 +13,14 @@ function registerChromeJS({ app, config }) {
     if (!fs.existsSync(diskPath)) {
       return res.status(404).end();
     }
-    const fileString = fs.readFileSync(diskPath, 'utf8')
-      .replace(/secure=true;/gm, '')
-      .replace(/https:\/\/sso.qa.redhat.com/gm, keycloakUri)
-      // This part gets minified weird. Let's just nuke https to http
-      .replace(/https:\/\//gm, 'http://');
+    let fileString = fs.readFileSync(diskPath, 'utf8');
+    if (keycloakUri) {
+      fileString = fileString
+        .replace(/secure=true;/gm, '')
+        .replace(/https:\/\/sso.qa.redhat.com/gm, keycloakUri)
+        // This part gets minified weird. Let's just nuke https to http
+        .replace(/https:\/\//gm, 'http://');
+    }
 
     res.send(fileString);
   });
@@ -27,6 +30,7 @@ function registerChromeJS({ app, config }) {
   // Static assets
   const staticLanding = express.static(config.frontend.landing.path);
   app.use('/', staticLanding);
+  app.use('/apps/landing', staticLanding);
   const staticConfig = express.static(config.frontend.config.path);
   app.use('/config', staticConfig);
 
