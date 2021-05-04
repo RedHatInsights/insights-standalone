@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 function checkoutRepo({ repo, reposDir, overwrite }) {
   if (!fs.existsSync(reposDir)) {
     console.log('Making repos dir', reposDir);
-    fs.mkdirSync(repoDir);
+    fs.mkdirSync(reposDir);
   }
 
   const [remote, branch = 'master'] = repo.split('#');

@@ -50,8 +50,8 @@ function getConfig() {
       .filter(key => typeof res.backend[key] === 'function')
       .forEach(key => res.backend[key] = res.backend[key]({ env: res.env, port: res.port }));
   }
-  catch (e) {
-    console.warn('No standalone config provided', e);
+  catch {
+    console.warn('No standalone config provided');
   }
 
   // Don't start keycloak if not replacing keycloakUri in chrome.js
