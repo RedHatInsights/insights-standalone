@@ -1,6 +1,6 @@
 {
   "name": "@redhat-cloud-services/insights-standalone",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Mock of core insights services complete with keycloak scripts and Webpack config",
   "main": "index.js",
   "module": "index.js",
