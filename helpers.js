@@ -45,15 +45,15 @@ function getConfig() {
   try {
     const config = require(process.cwd() + '/standalone.config');
     res = merge(res, config);
-    // console.log('user', config);
-    Object.keys(res.backend || {})
-      .filter(key => typeof res.backend[key] === 'function')
-      .forEach(key => res.backend[key] = res.backend[key]({ env: res.env, port: res.port }));
   }
   catch {
     console.warn('No standalone config provided');
   }
 
+  // Resolve functions that depend on assets
+  Object.keys(res.backend || {})
+    .filter(key => typeof res.backend[key] === 'function')
+    .forEach(key => res.backend[key] = res.backend[key]({ env: res.env, port: res.port }));
   // Don't start keycloak if not replacing keycloakUri in chrome.js
   if (res.frontend.chrome && !res.frontend.chrome.keycloakUri.includes('localhost')) {
     delete res.backend.chrome.keycloak;

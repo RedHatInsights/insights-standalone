@@ -39,7 +39,7 @@ const backend = {
       'entitlements-config': `https://github.com/redhatinsights/entitlements-config#${getEntitlementsBranch(env)}`
     },
     register: './api/registerEntitlements',
-    context: '/api/entitlements',
+    context: '/api/entitlements/v1',
   }),
 };
 
