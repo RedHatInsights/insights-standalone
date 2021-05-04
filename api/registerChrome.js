@@ -14,12 +14,12 @@ function registerChromeJS({ app, config }) {
       return res.status(404).end();
     }
     let fileString = fs.readFileSync(diskPath, 'utf8');
+    fileString = fileString
+      .replace(/secure=true;/gm, '')
+      // This part gets minified weird. Let's just nuke https to http
+      .replace(/https:\/\//gm, 'http://');
     if (keycloakUri) {
-      fileString = fileString
-        .replace(/secure=true;/gm, '')
-        .replace(/https:\/\/sso.qa.redhat.com/gm, keycloakUri)
-        // This part gets minified weird. Let's just nuke https to http
-        .replace(/https:\/\//gm, 'http://');
+      fileString = fileString.replace(/http:\/\/sso.qa.redhat.com/gm, keycloakUri);
     }
 
     res.send(fileString);

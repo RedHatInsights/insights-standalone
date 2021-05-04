@@ -55,7 +55,7 @@ function getConfig() {
   }
 
   // Don't start keycloak if not replacing keycloakUri in chrome.js
-  if (res.frontend.chrome && !res.frontend.keycloakUri) {
+  if (res.frontend.chrome && !res.frontend.chrome.keycloakUri.includes('localhost')) {
     delete res.backend.chrome.keycloak;
   }
   // console.log('config', res);

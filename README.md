@@ -38,7 +38,7 @@ plugins: [
 
 // To proxy requests to backend
 devServer: {
-  proxy: getProxyPaths({ publicPath, webpackPort })
+  proxy: getProxyPaths({ webpackPort })
 }
 ```
 
