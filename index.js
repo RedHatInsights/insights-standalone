@@ -26,7 +26,7 @@ function onProxyReq(proxyReq, req) {
           is_org_admin: payload.is_org_admin,
           is_internal: payload.is_internal,
           locale: 'en-US',
-          user_id: payload.account_id
+          user_id: payload.account_id + ''
         },
         internal: {
           org_id: payload.org_id,

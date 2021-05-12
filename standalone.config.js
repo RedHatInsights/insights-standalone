@@ -60,7 +60,6 @@ const frontend = {
       '/silent-check-sso.html',
       '/404.html'
     ],
-    target: 'https://ci.cloud.redhat.com/beta'
   },
   config: {
     path: 'https://github.com/redhatinsights/cloud-services-config',
